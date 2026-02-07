@@ -1,0 +1,16 @@
+old/
+out/
+
+*.o
+
+.vscode/
+.fleet/
+.idea/
+
+webtest
+
+args.h
+args.c
+build/
+.run/
+**/*.todo
