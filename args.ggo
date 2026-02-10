@@ -1,0 +1,7 @@
+package "webDriver"
+version "1.0"
+
+option "fhost" h "frontend host" string optional default="localhost"
+option "fport" p "frontend port" int optional default="3333"
+option "bhost" H "backend host" string optional default="localhost"
+option "bport" P "backend port" int optional default="8888"
