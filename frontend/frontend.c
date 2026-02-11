@@ -4,7 +4,7 @@
 static void ev_handler(struct mg_connection *c, int ev, void *ev_data) {
     if (ev == MG_EV_HTTP_MSG) {
         struct mg_http_message *hm = (struct mg_http_message *) ev_data;
-        struct mg_http_serve_opts opts = {.root_dir = "./frontend/web"};
+        struct mg_http_serve_opts opts = {.root_dir = "./frontend/web/dist"};
         mg_http_serve_dir(c, hm, &opts);
     }
 }
@@ -33,6 +33,8 @@ void* start_frontend(void* arg) {
     }
 
     mg_mgr_free(&mgr);
+
+    printf("bye! (from frontend)\n");
 
     return 0;
 }
