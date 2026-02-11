@@ -4,10 +4,10 @@
 #include <errno.h>
 
 #include "args.h"
+#include "backend/backend.h"
 #include "frontend/frontend.h"
 #include "webDriver/src/utils/utils.h"
 #include "shared/shared.h"
-
 
 volatile sig_atomic_t keep_running = 1;
 
@@ -26,6 +26,10 @@ int main(int argc, char *argv[]) {
         ERROR(1, "Error setting up signal handler");
         return 1;
     }
+    if (sigaction(SIGTERM, &sa, NULL) == -1) {
+        ERROR(1, "Error setting up signal handler");
+        return 1;
+    }
 
     struct gengetopt_args_info args;
 
@@ -38,41 +42,40 @@ int main(int argc, char *argv[]) {
     int fport = args.fport_arg;
     char *bhost = args.bhost_arg;
     int bport = args.bport_arg;
+    int sport = args.sport_arg;
 
 
     pthread_t frontend_tid;
     pthread_t backend_tid;
 
-    threads_args_t frontend_args = {
-            .host = fhost,
-            .port = fport
+    threads_args_t threads_args = {
+            .web_host = fhost,
+            .web_port = fport,
+            .server_host = bhost,
+            .server_port = bport,
+            .ws_port = sport
     };
 
 
-    if ((errno = pthread_create(&frontend_tid, NULL, start_frontend, &frontend_args)) != 0) {
+    if ((errno = pthread_create(&frontend_tid, NULL, start_frontend, &threads_args)) != 0) {
         ERROR(1, "Error creating frontend thread");
         return 1;
     }
 
-    threads_args_t backend_arguments = {
-            .host = bhost,
-            .port = bport
-    };
-
-    // if ((errno = pthread_create(&backend_tid, NULL, ..., &backend_arguments)) != 0) {
-    //     ERROR(1, "Error creating backend thread");
-    //     return 1;
-    // }
+    if ((errno = pthread_create(&backend_tid, NULL, start_backend, &threads_args)) != 0) {
+        ERROR(1, "Error creating backend thread");
+        return 1;
+    }
 
     if ((errno = pthread_join(frontend_tid, NULL)) != 0) {
         ERROR(1, "Error joining frontend thread");
         return 1;
     }
 
-    // if ((errno = pthread_join(backend_tid, NULL)) != 0) {
-    //     ERROR(1, "Error joining backend thread");
-    //     return 1;
-    // }
+    if ((errno = pthread_join(backend_tid, NULL)) != 0) {
+        ERROR(1, "Error joining backend thread");
+        return 1;
+    }
 
     cmdline_parser_free(&args);
     return 0;

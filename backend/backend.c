@@ -1,1 +1,56 @@
 #include "backend.h"
+
+static void ev_handler(struct mg_connection *c, int ev, void *ev_data) {
+    if (ev == MG_EV_HTTP_MSG) {
+        DEBUG("Received HTTP message");
+        struct mg_http_message *hm = (struct mg_http_message *) ev_data;
+        if (mg_match(hm->uri, mg_str("/ws"), NULL)) {
+            // Upgrade the connection to WebSocket
+            mg_ws_upgrade(c, hm, NULL);
+            DEBUG("Client upgraded to WebSocket!\n");
+            return;
+        }
+
+        struct mg_str response = mg_str("Hello from the backend!");
+        mg_http_reply(c, 200, "Content-Type: text/plain\r\n", "%.*s", (int) response.len, response.buf);
+
+    } else if (ev == MG_EV_WS_MSG) {
+        DEBUG("Received WebSocket message");
+        struct mg_ws_message *wm = (struct mg_ws_message *) ev_data;
+
+        DEBUG("Received message: %.*s\n", (int) wm->data.len, wm->data.buf);
+
+        struct mg_str response = mg_str("Hello from the websocket!");
+        mg_ws_send(c, response.buf, response.len, WEBSOCKET_OP_TEXT);
+    }
+}
+
+void* start_backend(void* arg) {
+    threads_args_t* args = (threads_args_t*) arg;
+
+    mg_log_set(MG_LL_ERROR);
+    struct mg_mgr mgr;
+    mg_mgr_init(&mgr);
+
+    char listen_addr[256];
+    snprintf(listen_addr, sizeof(listen_addr), "http://%s:%d", args->server_host, args->server_port);
+
+    char ws_listen_addr[256];
+    snprintf(ws_listen_addr, sizeof(ws_listen_addr), "http://%s:%d", args->server_host, args->ws_port);
+
+    mg_http_listen(&mgr, listen_addr, ev_handler, NULL);
+    mg_http_listen(&mgr, ws_listen_addr, ev_handler, NULL);
+
+    printf("Backend HTTP server started on %s\n", listen_addr);
+    printf("Backend WS server started on ws:// or %s\n", ws_listen_addr);
+
+    while (keep_running) {
+        mg_mgr_poll(&mgr, 1000);
+    }
+
+    mg_mgr_free(&mgr);
+
+    printf("bye! (from backend)\n");
+
+    return 0;
+}

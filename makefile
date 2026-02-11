@@ -27,12 +27,13 @@ BACKEND_SRCS := $(wildcard backend/*.c) $(wildcard backend/*/*.c)
 FRONTEND_SRCS := $(wildcard frontend/*.c) $(wildcard frontend/*/*.c)
 SHARED_SRCS := $(wildcard shared/*.c) $(wildcard shared/*/*.c)
 LIBS_SRCS := $(wildcard lib/*.c) $(wildcard lib/*/*.c)
+UTILS_SRCS := $(wildcard webDriver/src/utils/*.c) $(wildcard webDriver/src/utils/*/*.c) # from webdriver
 
 # 3. Define the Main sources (root directory files)
 MAIN_SRCS := main.c $(PROGRAM_OPT).c
 
 # 4. Combine them
-ALL_SRCS := $(MAIN_SRCS) $(MODULE_SRCS) $(BACKEND_SRCS) $(FRONTEND_SRCS) $(SHARED_SRCS) $(LIBS_SRCS)
+ALL_SRCS := $(MAIN_SRCS) $(MODULE_SRCS) $(BACKEND_SRCS) $(FRONTEND_SRCS) $(SHARED_SRCS) $(LIBS_SRCS) $(UTILS_SRCS)
 
 # 4. Convert .c filenames to .o filenames inside the BUILD_DIR
 #    Example: src/core/web_core.c -> build/src/core/web_core.o
@@ -40,6 +41,10 @@ PROGRAM_OBJS := $(patsubst %.c, $(BUILD_DIR)/%.o, $(ALL_SRCS))
 
 # Ensure args.h is generated before compiling any object file
 $(PROGRAM_OBJS): $(PROGRAM_OPT).h
+
+# Frontend build rule: if dist doesn't exist, build it
+frontend/web/dist:
+	cd frontend/web && npm run build
 
 # --------------------------------------------------------------------------
 # TARGETS
@@ -60,7 +65,7 @@ optimize: LDFLAGS += $(OPTIMIZE_FLAGS)
 optimize: $(PROGRAM)
 
 # Linking the executable
-$(PROGRAM): $(PROGRAM_OBJS)
+$(PROGRAM): $(PROGRAM_OBJS) frontend/web/dist
 	@mkdir -p $(BUILD_DIR)
 	$(CC) -o $@ $(PROGRAM_OBJS) $(LIBS) $(LDFLAGS)
 	@echo "Build successful: $(PROGRAM)"

@@ -2,8 +2,11 @@
 #define NORA_C_SHARED_H
 
 typedef struct {
-    int port;
-    char *host;
+    int web_port;
+    char *web_host;
+    int server_port;
+    char *server_host;
+    int ws_port;
 } threads_args_t;
 
 #endif //NORA_C_SHARED_H
