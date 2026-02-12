@@ -1,5 +1,6 @@
 import {X, FolderPlus} from 'lucide-preact';
 import { useState } from 'preact/hooks';
+import {useAppContext} from "../AppContext";
 
 interface CreateProjectData {
     name: string;
@@ -16,14 +17,36 @@ export function CreateProjectModal({ isOpen, onBack, onCreate }: CreateProjectMo
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
 
+    const {backendURL} = useAppContext();
+
     if (!isOpen) return null;
 
     const handleSubmit = (e: Event) => {
         e.preventDefault();
         if (name.trim()) {
-            onCreate({ name, description });
-            setName('');
-            setDescription('');
+
+            fetch(`${backendURL}/projects`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name, description }),
+            })
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error('Failed to create project');
+                }
+                return res.json();
+            })
+            .then(data => {
+                onCreate({ name: data.name, description: data.description });
+                setName('');
+                setDescription('');
+            })
+            .catch(err => {
+                console.error(err);
+                alert('Error creating project. Please try again.');
+            });
         }
     };
 
