@@ -1,9 +1,9 @@
 #include "backend.h"
-
-#include "controllers/projects/projects.h"
+#include "controllers/controllers.h"
 
 static const controller_t controllers[] = {
-    {.path = "/getprojects", .method = NORA_GET, .fun = get_projects},
+    {.path = "/projects", .method = NORA_GET, .fun = get_projects},
+    {.path = "/projects", .method = NORA_POST, .fun = create_project},
 
     // end
     {NULL, NULL, 0}
