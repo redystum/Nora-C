@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "../../utils/utils.h"
 
 void get_projects(struct mg_connection *c, struct mg_http_message *hm) {
     (void) hm;
@@ -83,7 +84,7 @@ void create_project(struct mg_connection *c, struct mg_http_message *hm) {
         char path[1024];
         snprintf(path, sizeof(path), "%s/documents/Nora/%s", home, name->valuestring);
 
-        if (mkdir(path, 0755) == -1) {
+        if (mkdir_p(path) == -1) {
             cJSON_Delete(json);
             mg_http_reply(c, 500, "Content-Type: text/plain\r\n", "Failed to create project directory");
             return;
@@ -113,9 +114,21 @@ void create_project(struct mg_connection *c, struct mg_http_message *hm) {
             char *prj_json_str = cJSON_Print(project_json);
             fprintf(f, "%s", prj_json_str);
             fclose(f);
-            mg_http_reply(c, 201, "Content-Type: application/json\r\n", "%s", prj_json_str);
             free(prj_json_str);
             cJSON_Delete(project_json);
+
+            char subdirs[4][20] = {"objects", "scenes", "scripts", "reports"};
+            for (int i = 0; i < 4; i++) {
+                char subdir_path[2048];
+                snprintf(subdir_path, sizeof(subdir_path), "%s/%s", path, subdirs[i]);
+                if (mkdir_p(subdir_path) == -1) {
+                    cJSON_Delete(json);
+                    mg_http_reply(c, 500, "Content-Type: text/plain\r\n", "Failed to create project subdirectories");
+                    return;
+                }
+            }
+
+            mg_http_reply(c, 201, "Content-Type: application/json\r\n", "%s", prj_json_str);
         } else {
             mg_http_reply(c, 500, "Content-Type: text/plain\r\n", "Failed to create project file");
         }

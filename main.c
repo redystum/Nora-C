@@ -43,6 +43,7 @@ int main(int argc, char *argv[]) {
     char *bhost = args.bhost_arg;
     int bport = args.bport_arg;
     int sport = args.sport_arg;
+    int auto_run = args.open_arg;
 
 
     pthread_t frontend_tid;
@@ -56,8 +57,12 @@ int main(int argc, char *argv[]) {
             .ws_port = sport
     };
 
+    frontend_args_t frontend_args = {
+            .args = &threads_args,
+            .auto_run = auto_run
+    };
 
-    if ((errno = pthread_create(&frontend_tid, NULL, start_frontend, &threads_args)) != 0) {
+    if ((errno = pthread_create(&frontend_tid, NULL, start_frontend, &frontend_args)) != 0) {
         ERROR(1, "Error creating frontend thread");
         return 1;
     }

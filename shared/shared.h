@@ -9,4 +9,9 @@ typedef struct {
     int ws_port;
 } threads_args_t;
 
+typedef struct {
+    threads_args_t *args;
+    int auto_run;
+} frontend_args_t;
+
 #endif //NORA_C_SHARED_H

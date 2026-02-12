@@ -23,11 +23,21 @@ int save_backend_hosts(threads_args_t *args) {
     fprintf(file, "%s\n%s\n", listen_addr, ws_listen_addr);
     fclose(file);
 
+    file = fopen("frontend/web/public/backend.txt", "w");
+    if (file == NULL) {
+        return 1;
+    }
+
+    fprintf(file, "%s\n%s\n", listen_addr, ws_listen_addr);
+    fclose(file);
+
     return 0;
 }
 
 void *start_frontend(void *arg) {
-    threads_args_t *args = (threads_args_t *) arg;
+    frontend_args_t *t_args = (frontend_args_t *) arg;
+    threads_args_t *args = t_args->args;
+    int auto_run = t_args->auto_run;
 
     mg_log_set(MG_LL_ERROR);
     struct mg_mgr mgr;
@@ -46,9 +56,11 @@ void *start_frontend(void *arg) {
         return NULL;
     }
 
-    char open_cmd[256 + 20];
-    snprintf(open_cmd, sizeof(open_cmd), "xdg-open %s", listen_addr);
-    system(open_cmd);
+    if (auto_run == 1) {
+        char open_cmd[256 + 20];
+        snprintf(open_cmd, sizeof(open_cmd), "xdg-open %s", listen_addr);
+        system(open_cmd);
+    }
 
     while (keep_running) {
         mg_mgr_poll(&mgr, 1000);
