@@ -3,6 +3,7 @@
 #include "utils/utils.h"
 
 static const controller_t controllers[] = {
+    {.path = "/", .method = NORA_GET, .fun = get_status},
     {.path = "/projects", .method = NORA_GET, .fun = get_projects},
     {.path = "/projects", .method = NORA_POST, .fun = create_project},
 

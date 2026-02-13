@@ -15,46 +15,55 @@ void get_projects(struct mg_connection *c, struct mg_http_message *hm) {
     cJSON *response_json = cJSON_CreateArray();
 
     char *home = getenv("HOME");
-    if (home) {
-        char path[1024];
-        snprintf(path, sizeof(path), "%s/documents/Nora", home);
+    if (!home) {
+        cJSON_Delete(response_json);
+        mg_http_reply(c, 500, DEFAULT_TEXT_HEADER, "HOME environment variable not set");
+        return;
+    }
 
-        DIR *noraDir = opendir(path);
-        if (noraDir) {
-            struct dirent *dir;
-            while ((dir = readdir(noraDir)) != NULL) {
-                if (dir->d_type == DT_DIR && strcmp(dir->d_name, ".") != 0 && strcmp(dir->d_name, "..") != 0) {
-                    char filepath[2048];
-                    snprintf(filepath, sizeof(filepath), "%s/%s/nora.json", path, dir->d_name);
+    char path[1024];
+    snprintf(path, sizeof(path), "%s/Documents/Nora", home);
 
-                    FILE *f = fopen(filepath, "r");
-                    if (f) {
-                        fseek(f, 0, SEEK_END);
-                        long length = ftell(f);
-                        fseek(f, 0, SEEK_SET);
+    DIR *noraDir = opendir(path);
+    if (!noraDir) {
+        cJSON_Delete(response_json);
+        mg_http_reply(c, 500, DEFAULT_TEXT_HEADER, "Failed to open projects directory");
+        return;
+    }
 
-                        char *buffer = malloc(length + 1);
-                        if (buffer) {
-                            fread(buffer, 1, length, f);
-                            buffer[length] = '\0';
+    struct dirent *dir;
+    while ((dir = readdir(noraDir)) != NULL) {
+        if (dir->d_type == DT_DIR && strcmp(dir->d_name, ".") != 0 && strcmp(dir->d_name, "..") != 0) {
+            char filepath[2048];
+            snprintf(filepath, sizeof(filepath), "%s/%s/nora.json", path, dir->d_name);
 
-                            cJSON *item = cJSON_Parse(buffer);
-                            if (item) {
-                                cJSON_AddItemToArray(response_json, item);
-                            }
-                            free(buffer);
-                        }
-                        fclose(f);
+            FILE *f = fopen(filepath, "r");
+            if (f) {
+                fseek(f, 0, SEEK_END);
+                long length = ftell(f);
+                fseek(f, 0, SEEK_SET);
+
+                char *buffer = malloc(length + 1);
+                if (buffer) {
+                    fread(buffer, 1, length, f);
+                    buffer[length] = '\0';
+
+                    cJSON *item = cJSON_Parse(buffer);
+                    if (item) {
+                        cJSON_AddItemToArray(response_json, item);
                     }
+                    free(buffer);
                 }
+                fclose(f);
             }
-            closedir(noraDir);
         }
     }
+    closedir(noraDir);
 
     char* response = cJSON_Print(response_json);
     cJSON_Delete(response_json);
     mg_http_reply(c, 200, DEFAULT_JSON_HEADER, "%s", response);
+    free(response);
 }
 
 void create_project(struct mg_connection *c, struct mg_http_message *hm) {
