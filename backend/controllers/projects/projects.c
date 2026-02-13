@@ -150,3 +150,63 @@ void create_project(struct mg_connection *c, struct mg_http_message *hm) {
 
     cJSON_Delete(json);
 }
+
+void get_project_files(struct mg_connection *c, struct mg_http_message *hm) {
+    char project_name[256];
+    if (mg_http_get_var(&hm->query, "projectName", project_name, sizeof(project_name)) <= 0) {
+        error_response(c, 400, "Missing 'projectName' query parameter");
+        return;
+    }
+
+    char *home = getenv("HOME");
+    if (!home) {
+        error_response(c, 500, "HOME environment variable not set");
+        return;
+    }
+
+    char path[1024];
+    snprintf(path, sizeof(path), "%s/Documents/Nora/%s", home, project_name);
+
+    DIR *dir = opendir(path);
+    if (!dir) {
+        error_response(c, 404, "Project not found");
+        return;
+    }
+
+    closedir(dir);
+    char subdirs[4][20] = {"objects", "scenes", "scripts", "reports"};
+
+    cJSON *response_json = cJSON_CreateObject();
+    for (int i = 0; i < 4; i++) {
+        char subdir_path[2048];
+        snprintf(subdir_path, sizeof(subdir_path), "%s/%s", path, subdirs[i]);
+
+        DIR *subdir = opendir(subdir_path);
+        if (!subdir) {
+            error_response(c, 500, "Failed to open project subdirectory");
+            return;
+        }
+
+        cJSON *files_array = cJSON_CreateArray();
+        struct dirent *entry;
+        while ((entry = readdir(subdir)) != NULL) {
+            if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+                continue;
+            }
+
+            cJSON *file_json = cJSON_CreateObject();
+            cJSON_AddStringToObject(file_json, "name", entry->d_name);
+            cJSON_AddStringToObject(file_json, "topParent", subdirs[i]);
+            cJSON_AddBoolToObject(file_json, "isFolder", entry->d_type == DT_DIR);
+            cJSON_AddItemToArray(files_array, file_json);
+        }
+        closedir(subdir);
+        cJSON_AddItemToObject(response_json, subdirs[i], files_array);
+
+    }
+
+    char* response = cJSON_Print(response_json);
+    cJSON_Delete(response_json);
+    mg_http_reply(c, 200, DEFAULT_JSON_HEADER, "%s", response);
+    free(response);
+}

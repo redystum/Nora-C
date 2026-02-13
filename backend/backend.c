@@ -6,6 +6,15 @@ static const controller_t controllers[] = {
     {.path = "/", .method = NORA_GET, .fun = get_status},
     {.path = "/projects", .method = NORA_GET, .fun = get_projects},
     {.path = "/projects", .method = NORA_POST, .fun = create_project},
+    {.path = "/projects/files", .method = NORA_GET, .fun = get_project_files},
+
+    // {.path = "files", .method = NORA_GET, .fun = get_file},
+    // {.path = "files", .method = NORA_POST, .fun = create_file},
+    // {.path = "files/delete", .method = NORA_POST, .fun = delete_file},
+    //
+    // {.path = "folders", .method = NORA_GET, .fun = get_folder},
+    // {.path = "folders", .method = NORA_POST, .fun = create_folder},
+    // {.path = "folders/delete", .method = NORA_POST, .fun = delete_folder},
 
     // end
     {NULL, NULL, 0}
@@ -13,8 +22,8 @@ static const controller_t controllers[] = {
 
 static void ev_handler(struct mg_connection *c, int ev, void *ev_data) {
     if (ev == MG_EV_HTTP_MSG) {
-        DEBUG("Received HTTP message");
         struct mg_http_message *hm = (struct mg_http_message *) ev_data;
+        DEBUG("Received HTTP message:\n %s", hm->message.buf);
 
         // cors stuff :/
         if (mg_match(hm->method, mg_str("OPTIONS"), NULL)) {
@@ -36,9 +45,11 @@ static void ev_handler(struct mg_connection *c, int ev, void *ev_data) {
 
         int i = 0;
         int found = 0;
+        DEBUG("Searching URI \"%.*s\" with method \"%.*s\"\n", (int) hm->uri.len, hm->uri.buf, (int) hm->method.len, hm->method.buf);
         while (controllers[i].path != NULL) {
             if (mg_match(hm->uri, mg_str(controllers[i].path), NULL)) {
                 controller_t ct = controllers[i];
+                DEBUG("Matched path: %s, method: %s\n", ct.path, ct.method == NORA_GET ? "GET" : "POST");
                 if (ct.method == NORA_GET && mg_match(hm->method, mg_str("GET"), NULL)) {
                     found = 1;
                     ct.fun(c, hm);

@@ -5,6 +5,7 @@
 
 void get_projects(struct mg_connection *c, struct mg_http_message *hm);
 void create_project(struct mg_connection *c, struct mg_http_message *hm);
+void get_project_files(struct mg_connection *c, struct mg_http_message *hm);
 
 
 #endif //NORA_C_PROJECTS_H
