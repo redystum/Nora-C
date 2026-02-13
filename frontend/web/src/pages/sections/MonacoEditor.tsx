@@ -1,9 +1,14 @@
-import { useEffect, useRef } from 'preact/hooks';
+import {useEffect, useRef, useState} from 'preact/hooks';
 import * as monaco from 'monaco-editor';
 
-export function MonacoEditor() {
+interface MonacoEditorProps {
+	isSavedCallBack: (saved: boolean) => void;
+}
+
+export function MonacoEditor({ isSavedCallBack }: MonacoEditorProps) {
 	const editorContainer = useRef(null);
 	const editorRef = useRef(null);
+	const [isSaved, setIsSaved] = useState<boolean>(true);
 
 	monaco.editor.defineTheme("dark-neutral", {
 		base: "vs-dark",
@@ -30,14 +35,7 @@ export function MonacoEditor() {
 
 		if (editorContainer.current) {
 			editorRef.current = monaco.editor.create(editorContainer.current, {
-				value: `
-#include <stdio.h>
-
-int main() {
-	printf("Hello, World!\\n");
-	return 0;
-}
-				`.trim(),
+				value: '#include <stdio.h>\n\nint main() {\n\tprintf("Hello, World!\\n");\n\treturn 0;\n}\n'.trim(),
 				language: 'c',
 				theme: 'dark-neutral',
 				automaticLayout: true,
@@ -48,11 +46,32 @@ int main() {
 				renderLineHighlight: "all",
 			});
 
+			editorRef.current.onDidChangeModelContent(() => {
+				isSavedCallBack(false);
+				setIsSaved(false);
+			});
+
 			return () => {
 				editorRef.current?.dispose();
 			};
 		}
 	}, []);
+
+	// every 10s save content
+	useEffect(() => {
+		const interval = setInterval(() => {
+			if (isSaved) return;
+
+			if (editorRef.current) {
+				// TODO
+				console.log("Saving content:", editorRef.current.getValue());
+				isSavedCallBack(true);
+				setIsSaved(true);
+			}
+		}, 10000);
+
+		return () => clearInterval(interval);
+	}, [isSavedCallBack]);
 
 	return <div ref={editorContainer} className="w-full h-full" />;
 }

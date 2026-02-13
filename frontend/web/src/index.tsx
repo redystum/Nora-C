@@ -19,6 +19,8 @@ export function App() {
     const [loadingStatus, setLoadingStatus] = useState<string | null>(null);
     const [retry, setRetry] = useState<number>(1);
 
+    const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+
     useEffect(() => {
         if (retry > 10) {
             setLoadingStatus("Failed to load configuration after multiple attempts. Please check your connection configurations on backend and try again.");
@@ -58,6 +60,7 @@ export function App() {
 
     const handleProjectSelect = (project: Project) => {
         console.log('Selected project:', project);
+        setSelectedProject(project);
         setIsOpenProjectModalOpen(false);
     };
 
@@ -76,14 +79,18 @@ export function App() {
         setIsCreateProjectModalOpen(false);
     }
 
+    const openOpenProjectModal = () => {
+        setIsOpenProjectModalOpen(true);
+    }
+
     return (
-        <AppContext.Provider value={{setIsGlobalLoading, backendURL, wsURL}}>
+        <AppContext.Provider value={{setIsGlobalLoading, backendURL, wsURL, openOpenProjectModal}}>
             {isLoading ? (
                 <LoadingScreen text={loadingStatus}/>
             ) : (
                 <>
                     {isGlobalLoading && <LoadingScreen/>}
-                    <Home/>
+                    <Home project={selectedProject}/>
                     <OpenProjectModal
                         isOpen={isOpenProjectModalOpen}
                         onSelect={handleProjectSelect}
