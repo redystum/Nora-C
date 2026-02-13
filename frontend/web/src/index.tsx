@@ -7,6 +7,7 @@ import {CreateProjectModal} from "./components/createProjectModal";
 import type {Project} from "./components/openProjetcModal";
 import AppContext from "./AppContext";
 import {LoadingScreen} from "./components/LoadingScreen";
+import {Toast} from "./components/Toast";
 
 export function App() {
     const [isOpenProjectModalOpen, setIsOpenProjectModalOpen] = useState<boolean>(true);
@@ -18,8 +19,14 @@ export function App() {
     const [isGlobalLoading, setIsGlobalLoading] = useState<boolean>(false);
     const [loadingStatus, setLoadingStatus] = useState<string | null>(null);
     const [retry, setRetry] = useState<number>(1);
+    const [error, setError] = useState<string | null>(null);
 
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+
+    const showError = (msg: string) => {
+        setError(msg);
+        setTimeout(() => setError(null), 5000);
+    }
 
     useEffect(() => {
         if (retry > 10) {
@@ -84,12 +91,13 @@ export function App() {
     }
 
     return (
-        <AppContext.Provider value={{setIsGlobalLoading, backendURL, wsURL, openOpenProjectModal}}>
+        <AppContext.Provider value={{setIsGlobalLoading, backendURL, wsURL, openOpenProjectModal, showError}}>
             {isLoading ? (
                 <LoadingScreen text={loadingStatus}/>
             ) : (
                 <>
                     {isGlobalLoading && <LoadingScreen/>}
+                    <Toast message={error} onClose={() => setError(null)} />
                     <Home project={selectedProject}/>
                     <OpenProjectModal
                         isOpen={isOpenProjectModalOpen}

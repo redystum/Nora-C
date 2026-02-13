@@ -21,7 +21,7 @@ export function OpenProjectModal({isOpen, onSelect, onNewProject}: OpenProjectMo
 
     if (!isOpen) return null;
 
-    const {backendURL} = useAppContext();
+    const {backendURL, showError} = useAppContext();
 
     useEffect(() => {
         if (!backendURL) return;
@@ -29,12 +29,21 @@ export function OpenProjectModal({isOpen, onSelect, onNewProject}: OpenProjectMo
         fetch(`${backendURL}/projects`).then(
             async (res) => {
                 if (!res.ok) {
-                    console.error("Failed to fetch projects:", res.statusText);
+                    try {
+                        const err = await res.json();
+                        showError(err.error || "Unknown error occurred");
+                    } catch (e) {
+                         showError(`Error: ${res.status} ${res.statusText}`);
+                    }
+                    return;
                 }
                 const data = await res.json();
                 setProjects(data as Project[]);
             }
-        )
+        ).catch(err => {
+            showError("Failed to connect to the server.");
+            console.error(err);
+        })
 
     }, [reload]);
 
@@ -73,7 +82,7 @@ export function OpenProjectModal({isOpen, onSelect, onNewProject}: OpenProjectMo
 
     return (
         <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 transition-all duration-300"
+            className="fixed inset-0 z-40 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 transition-all duration-300"
         >
             <div
                 className="w-full max-w-lg bg-[#0F0F0F] border border-neutral-800 rounded-2xl shadow-2xl shadow-black/50 flex flex-col max-h-[80vh] overflow-hidden animate-in fade-in zoom-in-95 duration-200 ring-1 ring-white/5">

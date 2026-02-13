@@ -26,17 +26,17 @@ export interface ProjectTree {
 
 export function Explorer({explorerWidth, scrollbarClasses, project}: ExplorerProps) {
     const [projectTree, setProjectTree] = useState<ProjectTree | null>(null);
-    const {backendURL} = useAppContext();
+    const {backendURL, showError} = useAppContext();
     const [reload, setReload] = useState<number>(0);
 
     useEffect(() => {
         if (project == null) return;
 
         fetch(`${backendURL}/projects/files?projectName=${project?.name}`)
-            .then((response) => {
+            .then(async (response) => {
                 if (!response.ok) {
-                    console.error(response);
-                    return
+                    const err = await response.json().catch(() => ({}));
+                    throw new Error(err.error || `Failed to fetch files: ${response.statusText}`);
                 }
                 return response.json();
             })
@@ -45,6 +45,7 @@ export function Explorer({explorerWidth, scrollbarClasses, project}: ExplorerPro
                 setProjectTree(data);
             }).catch((err) => {
             console.error('Error fetching project files:', err);
+            showError(err.message);
         });
     }, [project, reload]);
 

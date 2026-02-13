@@ -6,6 +6,7 @@ interface AppContextProps {
     backendURL: string | null;
     wsURL?: string | null;
     openOpenProjectModal?: () => void;
+    showError: (error: string) => void;
 }
 
 
@@ -13,7 +14,8 @@ const AppContext = createContext<AppContextProps>({
     setIsGlobalLoading: _ => false,
     backendURL: null,
     wsURL: null,
-    openOpenProjectModal: null
+    openOpenProjectModal: null,
+    showError: (error: string) => alert(error)
 });
 export const useAppContext = () => useContext(AppContext);
 export default AppContext;

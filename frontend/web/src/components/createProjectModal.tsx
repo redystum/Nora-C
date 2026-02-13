@@ -17,7 +17,7 @@ export function CreateProjectModal({ isOpen, onBack, onCreate }: CreateProjectMo
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
 
-    const {backendURL} = useAppContext();
+    const {backendURL, showError} = useAppContext();
 
     if (!isOpen) return null;
 
@@ -32,9 +32,10 @@ export function CreateProjectModal({ isOpen, onBack, onCreate }: CreateProjectMo
                 },
                 body: JSON.stringify({ name, description }),
             })
-            .then(res => {
+            .then(async res => {
                 if (!res.ok) {
-                    throw new Error('Failed to create project');
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err.error || `Failed to create project: ${res.statusText}`);
                 }
                 return res.json();
             })
@@ -45,14 +46,14 @@ export function CreateProjectModal({ isOpen, onBack, onCreate }: CreateProjectMo
             })
             .catch(err => {
                 console.error(err);
-                alert('Error creating project. Please try again.');
+                showError(err.message || 'Error creating project. Please try again.');
             });
         }
     };
 
     return (
         <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 transition-all duration-300"
+            className="fixed inset-0 z-40 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 transition-all duration-300"
         >
             <div className="w-full max-w-lg bg-[#0F0F0F] border border-neutral-800 rounded-2xl shadow-2xl shadow-black/50 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200 ring-1 ring-white/5">
 
