@@ -28,7 +28,7 @@ interface ContextMenuState {
 
 export function ProjectTreeView({projectTree, project, onReload}: ProjectTreeViewProps) {
     const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
-    const {backendURL, showError} = useAppContext();
+    const {backendURL, showError, setIsCreateFileOrFolderModalOpen} = useAppContext();
 
     useEffect(() => {
         const handleClick = () => setContextMenu(null);
@@ -69,33 +69,49 @@ export function ProjectTreeView({projectTree, project, onReload}: ProjectTreeVie
                     const err = await response.json().catch(() => ({}));
                     throw new Error(err.error || 'Failed to delete');
                 }
+                if (onReload) onReload();
             } else {
-                const name = prompt(`Enter name for new ${action === 'create-file' ? 'file' : 'folder'}:`);
-                if (!name) return;
+                const callback = async (name: string, lang: string) => {
+                    console.log('name', name, 'lang', lang);
+                    if (!name) return;
+                    name = name.trim();
+                    name = name.replace(/[/\\?%*:|"<>]/g, '_');
 
-                // Simple path construction. Note: path could be empty for root if we supported root context menu
-                const newPath = path ? `${path}/${name}` : name;
+                    if (lang === 'c' && !name.endsWith('.c')) {
+                        name += '.c';
+                    }
 
-                let url = '';
-                if (action === 'create-file') {
-                    url = `${backendURL}/files`;
-                } else if (action === 'create-folder') {
-                    url = `${backendURL}/folders`;
-                }
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        projectName: project.name,
-                        path: newPath,
-                    })
+                    // Simple path construction. Note: path could be empty for root if we supported root context menu
+                    const newPath = path ? `${path}/${name}` : name;
+
+                    let url = '';
+                    if (action === 'create-file') {
+                        url = `${backendURL}/files`;
+                    } else if (action === 'create-folder') {
+                        url = `${backendURL}/folders`;
+                    }
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            projectName: project.name,
+                            path: newPath,
+                        })
+                    });
+                    if (!response.ok) {
+                        const err = await response.json().catch(() => ({}));
+                        throw new Error(err.error || 'Failed to create');
+                    }
+
+                    if (onReload) onReload();
+                };
+
+                setIsCreateFileOrFolderModalOpen({
+                    type: action === 'create-file' ? 'file' : 'folder',
+                    path,
+                    callback
                 });
-                if (!response.ok) {
-                    const err = await response.json().catch(() => ({}));
-                    throw new Error(err.error || 'Failed to create');
-                }
             }
-            if (onReload) onReload();
         } catch (e: any) {
             console.error(e);
             showError(e.message);

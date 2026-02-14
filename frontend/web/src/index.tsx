@@ -8,10 +8,21 @@ import type {Project} from "./components/openProjetcModal";
 import AppContext from "./AppContext";
 import {LoadingScreen} from "./components/LoadingScreen";
 import {Toast} from "./components/Toast";
+import {CreateFileOrFolder} from "./components/CreateFileOrFolder";
+
+
+
+export interface CreateFileOrFolderModalState {
+    type: 'file' | 'folder';
+    path: string;
+    callback: (name: string, lang: string) => void;
+}
 
 export function App() {
     const [isOpenProjectModalOpen, setIsOpenProjectModalOpen] = useState<boolean>(true);
     const [isCreateProjectModalOpen, setIsCreateProjectModalOpen] = useState<boolean>(false);
+
+    const [isCreateFileOrFolderModalOpen, setIsCreateFileOrFolderModalOpen] = useState<CreateFileOrFolderModalState | null>(null);
 
     const [backendURL, setBackendURL] = useState<string | null>(null);
     const [wsURL, setWsURL] = useState<string | null>(null);
@@ -90,8 +101,15 @@ export function App() {
         setIsOpenProjectModalOpen(true);
     }
 
+    const handleOnCreateCreateFileOrFolderModal = (name: string, lang: string) => {
+        isCreateFileOrFolderModalOpen.callback(name, lang);
+        setIsCreateFileOrFolderModalOpen(null);
+    }
+
     return (
-        <AppContext.Provider value={{setIsGlobalLoading, backendURL, wsURL, openOpenProjectModal, showError}}>
+        <AppContext.Provider value={{
+            setIsGlobalLoading, backendURL, wsURL, openOpenProjectModal, showError, setIsCreateFileOrFolderModalOpen
+        }}>
             {isLoading ? (
                 <LoadingScreen text={loadingStatus}/>
             ) : (
@@ -108,6 +126,11 @@ export function App() {
                         isOpen={isCreateProjectModalOpen}
                         onBack={handleBackToOpenPrjModal}
                         onCreate={handleCreateProject}
+                    />
+                    <CreateFileOrFolder isOpen={!!isCreateFileOrFolderModalOpen}
+                                        type={isCreateFileOrFolderModalOpen?.type || 'file'}
+                                        onClose={() => setIsCreateFileOrFolderModalOpen(null)}
+                                        onCreate={handleOnCreateCreateFileOrFolderModal}
                     />
                 </>
             )}
