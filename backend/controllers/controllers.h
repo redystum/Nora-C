@@ -3,5 +3,6 @@
 
 #include "projects/projects.h"
 #include "status/status.h"
+#include "files/files.h"
 
 #endif //NORA_C_CONTROLLERS_H

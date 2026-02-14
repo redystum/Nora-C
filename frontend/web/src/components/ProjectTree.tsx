@@ -57,8 +57,8 @@ export function ProjectTreeView({projectTree, project, onReload}: ProjectTreeVie
             if (action === 'delete') {
                 if (!confirm(`Are you sure you want to delete ${path}?`)) return;
 
-                const response = await fetch(`${backendURL}/projects/files`, {
-                    method: 'DELETE',
+                const response = await fetch(`${backendURL}/projects/files/delete`, {
+                    method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
                         projectName: project.name,
@@ -76,13 +76,18 @@ export function ProjectTreeView({projectTree, project, onReload}: ProjectTreeVie
                 // Simple path construction. Note: path could be empty for root if we supported root context menu
                 const newPath = path ? `${path}/${name}` : name;
 
-                const response = await fetch(`${backendURL}/projects/files`, {
+                let url = '';
+                if (action === 'create-file') {
+                    url = `${backendURL}/files`;
+                } else if (action === 'create-folder') {
+                    url = `${backendURL}/folders`;
+                }
+                const response = await fetch(url, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
                         projectName: project.name,
                         path: newPath,
-                        isFolder: action === 'create-folder'
                     })
                 });
                 if (!response.ok) {
@@ -113,7 +118,7 @@ export function ProjectTreeView({projectTree, project, onReload}: ProjectTreeVie
             </ul>
             {contextMenu && contextMenu.visible && (
                 <div
-                    className="fixed bg-neutral-900 border border-neutral-800 shadow-xl rounded-lg py-1 z-50 min-w-[160px]"
+                    className="fixed bg-neutral-900 border border-neutral-800 shadow-xl rounded-lg py-1 z-50 min-w-40"
                     style={{top: contextMenu.y, left: contextMenu.x}}
                     onClick={(e) => e.stopPropagation()}
                 >
@@ -160,9 +165,10 @@ function FolderNode({name, files, path, onContextMenu}: {
                 onContextMenu={(e) => onContextMenu(e, path, true)}
             >
                 <span className="text-neutral-500 group-hover:text-neutral-400 transition-colors">
-                     {isOpen ? <ChevronDown size={14}/> : <ChevronRight size={14}/>}
+                    {isOpen ? <ChevronDown size={14}/> : <ChevronRight size={14}/>}
                 </span>
-                <span className="text-neutral-400 font-medium text-sm group-hover:text-neutral-200 transition-colors">{name}</span>
+                <span
+                    className="text-neutral-400 font-medium text-sm group-hover:text-neutral-200 transition-colors">{name}</span>
             </div>
             {isOpen && (
                 <ul className="ml-2 pl-2 border-l border-neutral-800/50 space-y-0.5 mt-0.5">
@@ -196,19 +202,26 @@ function FileNode({file, parentPath, onContextMenu}: {
                     onClick={() => setIsOpen(!isOpen)}
                     onContextMenu={(e) => onContextMenu(e, currentPath, true)}
                 >
-                     <span className="text-neutral-500 group-hover:text-neutral-400 transition-colors">
+                    <span className="text-neutral-500 group-hover:text-neutral-400 transition-colors">
                         {isOpen ? <ChevronDown size={14}/> : <ChevronRight size={14}/>}
                     </span>
                     <Folder size={14} className="text-blue-400/80 group-hover:text-blue-400 transition-colors"/>
-                    <span className="text-neutral-400 text-sm group-hover:text-neutral-300 transition-colors">{file.name}</span>
+                    <span
+                        className="text-neutral-400 text-sm group-hover:text-neutral-300 transition-colors">{file.name}</span>
                 </div>
-                {isOpen && file.children && (
-                    <ul className="ml-2 pl-2 border-l border-neutral-800/50 space-y-0.5">
-                        {file.children.map(child => (
-                            <FileNode key={child.name} file={child} parentPath={currentPath}
-                                      onContextMenu={onContextMenu}/>
-                        ))}
-                    </ul>
+                {isOpen && (
+                    file.children && file.children.length > 0 ? (
+                        <ul className="ml-2 pl-2 border-l border-neutral-800/50 space-y-0.5">
+                            {file.children.map(child => (
+                                <FileNode key={child.name} file={child} parentPath={currentPath}
+                                            onContextMenu={onContextMenu}/>
+                            ))}
+                        </ul>
+                    ) : (
+                        <ul className="ml-2 pl-2 border-l border-neutral-800/50 space-y-0.5">
+                            <li className="text-neutral-600 text-xs italic pl-6 py-1">Empty folder</li>
+                        </ul>
+                    )
                 )}
             </li>
         )

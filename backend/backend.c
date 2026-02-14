@@ -7,14 +7,13 @@ static const controller_t controllers[] = {
     {.path = "/projects", .method = NORA_GET, .fun = get_projects},
     {.path = "/projects", .method = NORA_POST, .fun = create_project},
     {.path = "/projects/files", .method = NORA_GET, .fun = get_project_files},
+    {.path = "/projects/files/delete", .method = NORA_POST, .fun = delete_project_file},
 
     // {.path = "files", .method = NORA_GET, .fun = get_file},
-    // {.path = "files", .method = NORA_POST, .fun = create_file},
-    // {.path = "files/delete", .method = NORA_POST, .fun = delete_file},
-    //
+    {.path = "/files", .method = NORA_POST, .fun = create_file},
+
     // {.path = "folders", .method = NORA_GET, .fun = get_folder},
-    // {.path = "folders", .method = NORA_POST, .fun = create_folder},
-    // {.path = "folders/delete", .method = NORA_POST, .fun = delete_folder},
+    {.path = "/folders", .method = NORA_POST, .fun = create_folder},
 
     // end
     {NULL, NULL, 0}
