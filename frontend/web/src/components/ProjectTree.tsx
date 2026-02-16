@@ -9,8 +9,10 @@ import {
     FilePlus,
     Folder,
     FolderPlus,
-    Trash2
+    Trash2,
+    FolderRoot
 } from "lucide-preact";
+import {FILE_TYPES} from "./CreateFileOrFolder";
 
 interface ProjectTreeViewProps {
     projectTree: ProjectTree;
@@ -77,9 +79,13 @@ export function ProjectTreeView({projectTree, project, onReload}: ProjectTreeVie
                     name = name.trim();
                     name = name.replace(/[/\\?%*:|"<>]/g, '_');
 
-                    if (lang === 'c' && !name.endsWith('.c')) {
-                        name += '.c';
-                    }
+                    FILE_TYPES.map((file, _) => {
+                        if (!!file.endsWith && file.id === lang) {
+                            if (!name.endsWith(file.endsWith)) {
+                                name += file.endsWith
+                            }
+                        }
+                    });
 
                     // Simple path construction. Note: path could be empty for root if we supported root context menu
                     const newPath = path ? `${path}/${name}` : name;
@@ -180,11 +186,13 @@ function FolderNode({name, files, path, onContextMenu}: {
                 onClick={() => setIsOpen(!isOpen)}
                 onContextMenu={(e) => onContextMenu(e, path, true)}
             >
-                <span className="text-neutral-500 group-hover:text-neutral-400 transition-colors">
+                <span className="text-neutral-200 group-hover:text-neutral-100 transition-colors">
                     {isOpen ? <ChevronDown size={14}/> : <ChevronRight size={14}/>}
                 </span>
+                <FolderRoot size={14}
+                            className="shrink-0 text-neutral-200 group-hover:text-neutral-100 transition-colors"/>
                 <span
-                    className="text-neutral-400 font-medium text-sm group-hover:text-neutral-200 transition-colors">{name}</span>
+                    className="text-neutral-200 font-medium text-sm group-hover:text-neutral-100 transition-colors">{name}</span>
             </div>
             {isOpen && (
                 <ul className="ml-2 pl-2 border-l border-neutral-800/50 space-y-0.5 mt-0.5">
@@ -209,6 +217,18 @@ function FileNode({file, parentPath, onContextMenu}: {
     const [isOpen, setIsOpen] = useState(false);
     const currentPath = `${parentPath}/${file.name}`;
     const [isHovered, setIsHovered] = useState(false);
+    const [fileType, setFileType] = useState(FILE_TYPES[0]);
+
+    setFileType(FILE_TYPES.find(type => {
+        if (type.endsWith) {
+            return file.name.endsWith(type.endsWith);
+        }
+        return file.name.split('.').pop() === type.id;
+    }));
+
+    useEffect(() => {
+        console.log(fileType);
+    }, [fileType]);
 
     if (file.isFolder) {
         return (
@@ -221,7 +241,8 @@ function FileNode({file, parentPath, onContextMenu}: {
                     <span className="text-neutral-500 group-hover:text-neutral-400 transition-colors">
                         {isOpen ? <ChevronDown size={14}/> : <ChevronRight size={14}/>}
                     </span>
-                    <Folder size={14} className="text-blue-400/80 group-hover:text-blue-400 transition-colors"/>
+                    <Folder size={14}
+                            className="shrink-0 text-blue-400/80 group-hover:text-blue-400 transition-colors"/>
                     <span
                         className="text-neutral-400 text-sm group-hover:text-neutral-300 transition-colors">{file.name}</span>
                 </div>
@@ -230,7 +251,7 @@ function FileNode({file, parentPath, onContextMenu}: {
                         <ul className="ml-2 pl-2 border-l border-neutral-800/50 space-y-0.5">
                             {file.children.map(child => (
                                 <FileNode key={child.name} file={child} parentPath={currentPath}
-                                            onContextMenu={onContextMenu}/>
+                                          onContextMenu={onContextMenu}/>
                             ))}
                         </ul>
                     ) : (
@@ -250,7 +271,13 @@ function FileNode({file, parentPath, onContextMenu}: {
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
         >
-            <FileIcon size={14} className="text-neutral-500 group-hover:text-neutral-400 transition-colors"/>
+            {fileType && fileType.icon ? (
+                <fileType.icon size={14}
+                               className="shrink-0 text-neutral-500 group-hover:text-neutral-400 transition-colors"/>
+            ) : (
+                <FileIcon size={14}
+                          className="shrink-0 text-neutral-500 group-hover:text-neutral-400 transition-colors"/>
+            )}
             <span className="text-neutral-400 text-sm group-hover:text-neutral-300 transition-colors">{file.name}</span>
         </li>
     )

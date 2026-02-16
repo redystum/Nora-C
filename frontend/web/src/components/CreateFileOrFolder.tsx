@@ -1,27 +1,38 @@
-import { X, FolderPlus, File, FileCode } from 'lucide-preact';
-import { useState, useEffect, useRef } from 'preact/hooks';
+import {X, FolderPlus, File, FileCode, ShipWheel, MousePointerSquareDashed, TextInitial} from 'lucide-preact';
+import {useState, useEffect, useRef} from 'preact/hooks';
+import {CreateFileOrFolderModalState} from "../index";
 
 interface CreateFileOrFolderProps {
     isOpen: boolean;
-    type: 'file' | 'folder';
+    item: CreateFileOrFolderModalState;
     onClose: () => void;
     onCreate: (name: string, language?: string) => void;
 }
 
-const FILE_TYPES = [
-    { id: 'not_specified', label: 'Not specified', icon: File },
-    { id: 'c', label: 'C Source', icon: FileCode },
+export interface FileType {
+    id: string;
+    label: string;
+    icon: any;
+    endsWith?: string;
+}
+
+export const FILE_TYPES: FileType[] = [
+    {id: 'not_specified', label: 'Not specified', icon: File},
+    {id: 'c', label: 'C Source', icon: FileCode, endsWith: '.c'},
+    {id: 'nora', label: 'Nora', icon: ShipWheel, endsWith: '.nora'},
+    {id: 'object', label: 'Web Object', icon: MousePointerSquareDashed, endsWith: '.wobj'},
+    {id: 'scene', label: 'Web Scene', icon: TextInitial, endsWith: '.wscene'},
 ];
 
-export function CreateFileOrFolder({ isOpen, type, onClose, onCreate }: CreateFileOrFolderProps) {
+export function CreateFileOrFolder({isOpen, item, onClose, onCreate}: CreateFileOrFolderProps) {
     const [name, setName] = useState('');
-    const [selectedTypeIndex, setSelectedTypeIndex] = useState(0);
+    const [selectedTypeIndex, setSelectedTypeIndex] = useState(1);
     const inputRef = useRef<HTMLInputElement>(null);
+    const [fileTypes, setFileTypes] = useState<FileType[]>(FILE_TYPES);
 
     useEffect(() => {
         if (isOpen) {
             setName('');
-            setSelectedTypeIndex(1);
             // Use timeout to ensure element is mounted before focusing
             setTimeout(() => {
                 inputRef.current?.focus();
@@ -40,10 +51,28 @@ export function CreateFileOrFolder({ isOpen, type, onClose, onCreate }: CreateFi
         return () => window.removeEventListener('keydown', handleEsc);
     }, [isOpen, onClose]);
 
+    useEffect(() => {
+        if (item) {
+            console.log(item);
+            let activeTypes = ['not_specified'];
+            if (item.path.startsWith('objects')) {
+                activeTypes.push('object');
+            } else if (item.path.startsWith('scenes')) {
+                activeTypes.push('scene');
+            } else if (item.path.startsWith('scripts')) {
+                activeTypes.push('c');
+            }
+
+            setFileTypes(FILE_TYPES.filter(ft => activeTypes.includes(ft.id)));
+            setSelectedTypeIndex((activeTypes.length>1) ? 1 : 0);
+            console.log(fileTypes);
+        }
+    }, [item]);
+
     if (!isOpen) return null;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-        if (type !== 'file') return;
+        if (item.type !== 'file') return;
 
         if (e.key === 'ArrowDown') {
             e.preventDefault();
@@ -57,7 +86,7 @@ export function CreateFileOrFolder({ isOpen, type, onClose, onCreate }: CreateFi
     const handleSubmit = (e: Event) => {
         e.preventDefault();
         if (name.trim()) {
-            const language = type === 'file' ? FILE_TYPES[selectedTypeIndex].id : undefined;
+            const language = item.type === 'file' ? fileTypes[selectedTypeIndex].id : undefined;
             onCreate(name, language);
             onClose();
         }
@@ -74,29 +103,33 @@ export function CreateFileOrFolder({ isOpen, type, onClose, onCreate }: CreateFi
             className="fixed inset-0 z-40 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 transition-all duration-300"
             onClick={handleBackdropClick}
         >
-            <div className="w-full max-w-lg bg-[#0F0F0F] border border-neutral-800 rounded-2xl shadow-2xl shadow-black/50 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200 ring-1 ring-white/5">
+            <div
+                className="w-full max-w-lg bg-[#0F0F0F] border border-neutral-800 rounded-2xl shadow-2xl shadow-black/50 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200 ring-1 ring-white/5">
 
                 {/* Header */}
-                <div className="flex items-center justify-between px-5 py-4 border-b border-white/5 shrink-0 bg-[#141414]">
+                <div
+                    className="flex items-center justify-between px-5 py-4 border-b border-white/5 shrink-0 bg-[#141414]">
                     <h2 className="text-lg font-semibold text-neutral-200 flex items-center gap-2.5">
                         <div className="p-1.5 bg-neutral-800/50 rounded-lg">
-                            {type === 'folder' ? <FolderPlus className="w-4 h-4 text-neutral-300" /> : <File className="w-4 h-4 text-neutral-300" />}
+                            {item.type === 'folder' ? <FolderPlus className="w-4 h-4 text-neutral-300"/> :
+                                <File className="w-4 h-4 text-neutral-300"/>}
                         </div>
-                        {type === 'folder' ? 'New Directory' : 'New File'}
+                        {item.type === 'folder' ? 'New Directory' : 'New File'}
                     </h2>
                     <button
                         onClick={onClose}
                         className="cursor-pointer p-1.5 rounded-lg text-neutral-500 hover:text-neutral-200 hover:bg-white/5 transition-all"
                         title="Close"
                     >
-                        <X size={18} />
+                        <X size={18}/>
                     </button>
                 </div>
 
                 <form onSubmit={handleSubmit} className="flex flex-col">
                     <div className="p-6 space-y-6">
                         <div className="space-y-2">
-                            <label className="text-xs font-semibold text-neutral-400 uppercase tracking-wider ml-1">Name</label>
+                            <label
+                                className="text-xs font-semibold text-neutral-400 uppercase tracking-wider ml-1">Name</label>
                             <input
                                 ref={inputRef}
                                 type="text"
@@ -105,16 +138,17 @@ export function CreateFileOrFolder({ isOpen, type, onClose, onCreate }: CreateFi
                                 onInput={(e) => setName(e.currentTarget.value)}
                                 onKeyDown={handleKeyDown}
                                 className="w-full bg-[#1A1A1A] border border-neutral-800 rounded-xl px-4 py-3 text-neutral-200 focus:outline-none focus:border-neutral-700 focus:bg-[#202020] focus:ring-1 focus:ring-neutral-700 transition-all placeholder:text-neutral-600 text-sm"
-                                placeholder={type === 'folder' ? "directory_name" : "filename"}
+                                placeholder={item.type === 'folder' ? "directory_name" : "filename"}
                                 autoFocus
                             />
                         </div>
 
-                        {type === 'file' && (
+                        {item.type === 'file' && (
                             <div className="space-y-2">
-                                <label className="text-xs font-semibold text-neutral-400 uppercase tracking-wider ml-1">File Type</label>
+                                <label className="text-xs font-semibold text-neutral-400 uppercase tracking-wider ml-1">File
+                                    Type</label>
                                 <div className="border border-neutral-800 rounded-xl overflow-hidden bg-[#1A1A1A]">
-                                    {FILE_TYPES.map((ft, index) => (
+                                    {fileTypes.map((ft, index) => (
                                         <div
                                             key={ft.id}
                                             onClick={() => setSelectedTypeIndex(index)}
@@ -124,9 +158,10 @@ export function CreateFileOrFolder({ isOpen, type, onClose, onCreate }: CreateFi
                                                     : 'text-neutral-500 hover:bg-white/5 hover:text-neutral-300'
                                             }`}
                                         >
-                                            <ft.icon size={16} />
+                                            <ft.icon size={16}/>
                                             <span>{ft.label}</span>
-                                            {selectedTypeIndex === index && <span className="ml-auto text-xs opacity-50">Selected</span>}
+                                            {selectedTypeIndex === index &&
+                                                <span className="ml-auto text-xs opacity-50">Selected</span>}
                                         </div>
                                     ))}
                                 </div>
@@ -136,7 +171,7 @@ export function CreateFileOrFolder({ isOpen, type, onClose, onCreate }: CreateFi
                     </div>
 
                     <div className="px-5 py-4 border-t border-white/5 bg-[#141414] flex justify-end gap-3">
-                         <button
+                        <button
                             type="button"
                             onClick={onClose}
                             className="cursor-pointer px-4 py-2 text-sm font-medium text-neutral-400 hover:text-neutral-200 hover:bg-white/5 rounded-lg transition-all duration-200"

@@ -128,7 +128,7 @@ export function App() {
                         onCreate={handleCreateProject}
                     />
                     <CreateFileOrFolder isOpen={!!isCreateFileOrFolderModalOpen}
-                                        type={isCreateFileOrFolderModalOpen?.type || 'file'}
+                                        item={isCreateFileOrFolderModalOpen ?? null}
                                         onClose={() => setIsCreateFileOrFolderModalOpen(null)}
                                         onCreate={handleOnCreateCreateFileOrFolderModal}
                     />
